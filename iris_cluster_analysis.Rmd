@@ -95,6 +95,30 @@ options(dplyr.summarise.inform = FALSE)
 
 # **Modeling**
 
+## K-Means Clustering
+A partitioning method that divides the dataset into k clusters based on distance to centroids.
+```{r}
+
+```
+
+## Hierarchical Clustering
+Builds a dendrogram to represent nested groupings
+```{r}
+
+```
+
+## Gaussian Mixture Model (Model-Based Clustering)
+Assumes data comes from a mixture of Gaussian distributions.
+```{r}
+
+```
+
+## DBSCAN (Density-Based Clustering)
+Detects clusters of varying shapes and identifies noise.
+```{r}
+
+```
+
 
 
 
