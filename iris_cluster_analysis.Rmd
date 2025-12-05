@@ -34,7 +34,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE, message = FALSE, warning = FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.width=12, fig.height=6)
+knitr::opts_chunk$set(echo = TRUE, fig.width=12, fig.height=8)
 
 # Set default CRAN mirror
 options(repos = c(CRAN = "https://cloud.r-project.org"))
@@ -43,9 +43,8 @@ options(repos = c(CRAN = "https://cloud.r-project.org"))
 # List of required packages
 
 
-required_pkgs <- c("tidyverse","skimr","GGally","caret","pROC","vip","xgboost",
-                   "Matrix","pls","broom","janitor","car","yardstick","cowplot",
-                   "ggrepel","patchwork","MASS", "e1071", "kableExtra")
+required_pkgs <- c("tidyverse", "GGally", "skimr", "cluster", "factoextra", "fpc",
+                   "mclust", "knitr")
 
 # Install and load each package
 for (pkg in required_pkgs) {
@@ -55,7 +54,7 @@ for (pkg in required_pkgs) {
   library(pkg, character.only = TRUE)
 }
 
-theme_set(theme_minimal(base_size = 12))
+theme_set(theme_test(base_size = 14))
 options(dplyr.summarise.inform = FALSE)
 ```
 
@@ -73,6 +72,10 @@ options(dplyr.summarise.inform = FALSE)
 \pagenumbering{arabic}
 
 # **Business Understanding**
+## Introduction
+
+
+## Problem Statement
 
 
 
@@ -80,53 +83,268 @@ options(dplyr.summarise.inform = FALSE)
 \newpage
 
 # **Data Understanding**
+## Load the Dataset
+Load the dataset and display first six rows of the dataset
+```{r}
+data(iris)
+head(iris)
+```
+
+## Statistical Summary
+Display the statistical summary of the dataset
+```{r}
+summary(iris)
+skim(iris)
+```
+
+## Data Description
 
 
+## Data Dictionary
+
+
+## Check for Missing Values
+```{r}
+colSums(is.na(iris))
+```
+
+## Exploratory Data Analysis (Plots)
+### Pairwise relationship
+```{r}
+ggpairs(
+  iris,
+  columns = 1:4,
+  aes(color = Species,
+      alpha = 0.7
+      )
+)
+```
+
+### Univariate distribution
+```{r}
+iris %>%
+  pivot_longer(cols = 1:4, names_to = "Feature", values_to = "Value") %>%
+  ggplot(aes(x = Value, fill = Feature)) +
+  geom_histogram(bins = 20, alpha = 0.7, show.legend = FALSE) +
+  facet_wrap(~ Feature, scale = "free")
+```
 
 
 \newpage
 
 # **Data Preparation**
+## Select Features and Standardize
+For unsupervised modeling, I’ll use only the numeric features and standardize them, so that variables with larger scales don’t dominate distance calculations.
 
+Select numeric features only
+```{r}
+iris_features <- iris %>% 
+  select(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width)
+```
 
+Standardize/ scale the numeric features
+```{r}
+iris_scaled <- scale(iris_features)
+```
+
+Quick check of the standardized numeric features
+```{r}
+summary(iris_scaled)
+```
+
+## PCA for Dimensionality Reduction & Visualization
+```{r}
+pca_model <- prcomp(iris_scaled, center = TRUE, scale = TRUE)
+
+summary(pca_model)
+```
+
+Biplot
+```{r, fig.width=10, fig.height=10}
+biplot(pca_model, scale = 0)
+```
 
 
 \newpage
 
 # **Modeling**
+I will explore several unsupervised methods:
+
+* K-means clustering
+* Hierarchical clustering
+* Gaussian mixture models (GMM) via mclust
+
+## Determine number of clusters (k) for K-Means
+**Elbow Method**
+```{r}
+set.seed(123)
+
+wss <- map_dbl(1:10, ~ {
+kmeans(iris_scaled, centers = .x, nstart = 25)$tot.withinss
+})
+
+plot(
+1:10, wss, type = "b",
+xlab = "Number of clusters (k)",
+ylab = "Total within-cluster sum of squares",
+main = "Elbow Method"
+)
+```
+
+**Average Silhouette Width**
+```{r}
+sil_width <- map_dbl(2:10, ~ {
+km <- kmeans(iris_scaled, centers = .x, nstart = 25)
+ss <- silhouette(km$cluster, dist(iris_scaled))
+mean(ss[, "sil_width"])
+})
+
+plot(
+2:10, sil_width, type = "b",
+xlab = "Number of clusters (k)",
+ylab = "Average silhouette width",
+main = "Silhouette Method"
+)
+```
 
 ## K-Means Clustering
 A partitioning method that divides the dataset into k clusters based on distance to centroids.
 ```{r}
+set.seed(123)
 
+k_opt <- 3 # chosen after inspecting elbow/silhouette
+kmeans_model <- kmeans(iris_scaled, centers = k_opt, nstart = 25)
+
+kmeans_model$size
+kmeans_model$centers
+```
+
+Add cluster to original data
+```{r}
+iris_kmeans <- iris %>%
+mutate(KMeansCluster = factor(kmeans_model$cluster))
+head(iris_kmeans)
+tail(iris_kmeans)
+```
+
+Visualize K-Means clusters
+```{r}
+fviz_cluster(
+kmeans_model,
+data = iris_scaled,
+geom = "point",
+ellipse.type = "norm",
+main = "K-Means Clustering on Iris (k = 3)"
+)
 ```
 
 ## Hierarchical Clustering
 Builds a dendrogram to represent nested groupings
-```{r}
 
+Create distance matrix
+```{r}
+dist_matrix <- dist(iris_scaled)
+```
+
+Hierarchical clustering with Ward's method
+```{r}
+hc_model <- hclust(dist_matrix, method = "ward.D2")
+
+plot(hc_model, labels = FALSE, main = "Hierarchical Clustering Dendrogram")
+rect.hclust(hc_model, k = 3, border = "blue")
+```
+
+Cut tree into 3 clusters
+```{r}
+hc_clusters <- cutree(hc_model, k = 3)
+iris_hclust <- iris %>%
+mutate(HCluster = factor(hc_clusters))
+
+table(iris_hclust$HCluster)
 ```
 
 ## Gaussian Mixture Model (Model-Based Clustering)
 Assumes data comes from a mixture of Gaussian distributions.
-```{r}
 
+Gaussian mixture models (GMM) via mclust
+```{r}
+set.seed(123)
+
+gmm_model <- Mclust(iris_scaled)
+
+summary(gmm_model)
 ```
 
-## DBSCAN (Density-Based Clustering)
-Detects clusters of varying shapes and identifies noise.
+Cluister assignment
 ```{r}
+gmm_clusters <- gmm_model$classification
+iris_gmm <- iris %>%
+mutate(GMMCluster = factor(gmm_clusters))
 
+table(iris_gmm$GMMCluster)
 ```
 
-
+Plot GMM Clusters
+```{r}
+plot(gmm_model, what = "classification")
+```
 
 
 \newpage
 
 # **Evaluation**
+Although these are unsupervised models, I can compare the resulting clusters with the known Species for evaluation purposes only.
 
+## Confusion Tables
 
+### K-Means vs Species
+```{r}
+table(Cluster = iris_kmeans$KMeansCluster, Species = iris_kmeans$Species)
+```
+
+### Hierarchical vs Species
+```{r}
+table(Cluster = iris_hclust$HCluster, Species = iris_hclust$Species)
+```
+
+### GMM vs Species
+```{r}
+table(Cluster = iris_gmm$GMMCluster, Species = iris_gmm$Species)
+```
+
+## Adjusted Rand Index (ARI)
+The Adjusted Rand Index measures agreement between two partitions (here: clusters vs. species), adjusted for chance.
+
+Helper function to compute ARI
+```{r}
+compute_ari <- function(cluster_labels) {
+  cluster.stats(
+    d = dist(iris_scaled),
+    clustering = cluster_labels,
+    alt.clustering = as.numeric(iris$Species)
+    )$corrected.rand
+  }
+```
+
+Compute ARI
+```{r}
+ari_kmeans <- compute_ari(kmeans_model$cluster)
+ari_hclust <- compute_ari(hc_clusters)
+ari_gmm <- compute_ari(gmm_clusters)
+```
+
+Display models ARI
+```{r}
+ari_kmeans
+ari_hclust
+ari_gmm
+```
+
+## Silhouette Analysis for K-Means
+```{r}
+sil_kmeans <- silhouette(kmeans_model$cluster, dist(iris_scaled))
+fviz_silhouette(sil_kmeans)
+```
 
 
 \newpage
