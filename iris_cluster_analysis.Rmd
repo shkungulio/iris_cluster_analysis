@@ -41,8 +41,7 @@ options(repos = c(CRAN = "https://cloud.r-project.org"))
 
 #Install the following libraries if required
 # List of required packages
-required_pkgs <- c("tidyverse", "GGally", "skimr", "cluster", "factoextra", "fpc",
-                   "mclust", "knitr")
+required_pkgs <- c("tidyverse", "GGally", "skimr", "cluster", "factoextra", "fpc", "mclust", "knitr")
 
 # Install and load each package
 for (pkg in required_pkgs) {
@@ -431,7 +430,18 @@ Given these results, K-Means (k = 3) stands out as the most appropriate model fo
 \newpage
 
 # **Deployment**
+Save Preprocessing Parameters and the Trained K-Means Model
+```{r}
+# Standardize iris data (as done in your analysis)
+scale_params <- attr(iris_scaled, "scaled:center")
+scale_scale   <- attr(iris_scaled, "scaled:scale")
 
+# Save objects for deployment
+saveRDS(scale_params, "resources/scale_center.rds")
+saveRDS(scale_scale,  "resources/scale_scale.rds")
+saveRDS(kmeans_model, "resources/kmeans_model.rds")
+
+```
 
 
 
