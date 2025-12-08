@@ -444,7 +444,6 @@ saveRDS(kmeans_model, "resources/kmeans_model.rds")
 ```
 
 
-
 \newpage
 
 # **Conclusion**
