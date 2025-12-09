@@ -2,27 +2,20 @@
 title: "IRIS Clusters Analysis Dashboard"
 output: 
   flexdashboard::flex_dashboard:
+    navbar:
+      - { href: "https://www.linkedin.com/in/shkungulio/", 
+      icon: "fa-linkedin" }
+      - { href: https://github.com/shkungulio, 
+      icon: "fa-github" }
     orientation: rows
     vertical_layout: fill
     theme: cosmo
-      # bg: "#101010"
-      # fg: "#FDF7F7" 
-      # primary: "#ED79F9"
-      # base_font:
-      #   google: Prompt
-      # code_font:
-      #   google: JetBrains Mono
 runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
-# Install thematic and un-comment for themed static plots (i.e., ggplot2)
-# thematic::thematic_rmd()
-```
-
-```{r}
-# Core packages
+library(shiny)
 library(flexdashboard)
 library(tidyverse)
 library(cluster)
@@ -31,140 +24,188 @@ library(fpc)
 library(DT)
 library(plotly)
 
-# -------------------------------------------------------------------
+# Global options
+options(scipen = 999)
+theme_set(theme_minimal(base_size = 12))
+```
 
-# Data & model objects (re-using your saved deployment artifacts)
-
-# -------------------------------------------------------------------
-
+```{r}
+# Data & model objects
 data(iris)
 
-
-# Numeric features only (same as in your report)
-
+# Select numeric features only
 iris_features <- iris %>%
 select(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width)
 
-
 # Load saved scaling parameters and trained K-Means model
-
 scale_center <- readRDS("../resources/scale_center.rds")
 scale_scale  <- readRDS("../resources/scale_scale.rds")
 kmeans_model <- readRDS("../resources/kmeans_model.rds")
 
-
-# Apply the same standardization used in the analysis
-
+# Apply standardization
 iris_scaled <- scale(
-iris_features,
-center = scale_center,
-scale  = scale_scale
+  iris_features,
+  center = scale_center,
+  scale  = scale_scale
 )
-
 
 # Attach clusters back to original data
-
 iris_kmeans <- iris %>%
-mutate(
-KMeansCluster = factor(kmeans_model$cluster),
-Species       = Species
-)
-
+  mutate(KMeansCluster = factor(kmeans_model$cluster),
+         Species = Species
+         )
 
 # Distance matrix for cluster diagnostics
-
 dist_iris <- dist(iris_scaled)
 
-
-# Silhouette for k = 3 (your chosen k)
-
+# Silhouette for k = 3
 sil_obj <- cluster::silhouette(kmeans_model$cluster, dist_iris)
 avg_sil_width <- mean(sil_obj[, "sil_width"])
 
-
 # Adjusted Rand Index helper
-
 compute_ari <- function(cluster_labels, dist_matrix, true_labels) {
-cluster.stats(
-d              = dist_matrix,
-clustering     = cluster_labels,
-alt.clustering = as.numeric(true_labels)
-)$corrected.rand
+  cluster.stats(d = dist_matrix,
+                clustering = cluster_labels,
+                alt.clustering = as.numeric(true_labels)
+  )$corrected.rand
 }
 
+# Compute ARI between K-Means clusters and true species
 ari_kmeans <- compute_ari(kmeans_model$cluster, dist_iris, iris$Species)
 
-
-# PCA for visualization (same approach as in your report)
-
+# PCA for visualization
 pca_model <- prcomp(iris_scaled, center = TRUE, scale. = TRUE)
 
+# PCA data with clusters and species
 pca_data <- as_tibble(pca_model$x[, 1:2]) %>%
-mutate(
-Cluster = factor(kmeans_model$cluster),
-Species = iris$Species
-)
-
+  mutate(Cluster = factor(kmeans_model$cluster),
+         Species = iris$Species
+         )
 
 # Cluster centers as tibble (for display)
 centers_tbl <- as_tibble(kmeans_model$centers) %>%
-mutate(Cluster = factor(row_number())) %>%
-relocate(Cluster)
+  mutate(Cluster = factor(row_number())) %>%
+  relocate(Cluster)
 ```
 
 ```{r}
 # Shared reactive filters for the whole dashboard
 filtered_data <- reactive({
-df <- iris_kmeans
-
-# Filter by species (if user selected any)
-if (!is.null(input$species_filter) && length(input$species_filter) > 0) {
-df <- df %>% filter(Species %in% input$species_filter)
-}
-
-
-# Filter by cluster (if user selected any)
-if (!is.null(input$cluster_filter) && length(input$cluster_filter) > 0) {
-df <- df %>% filter(KMeansCluster %in% input$cluster_filter)
-}
-
-df
-})
+  df <- iris_kmeans
+  
+  # Filter by species (if user selected any)
+  if (!is.null(input$species_filter) && length(input$species_filter) > 0) {
+    df <- df %>% filter(Species %in% input$species_filter)
+  }
+  
+  # Filter by cluster (if user selected any)
+  if (!is.null(input$cluster_filter) && length(input$cluster_filter) > 0) {
+    df <- df %>% filter(KMeansCluster %in% input$cluster_filter)
+  }
+  
+  df
+  }
+)
 
 filtered_pca <- reactive({
-df <- pca_data
-
-if (!is.null(input$species_filter) && length(input$species_filter) > 0) {
-df <- df %>% filter(Species %in% input$species_filter)
-}
-
-if (!is.null(input$cluster_filter) && length(input$cluster_filter) > 0) {
-df <- df %>% filter(Cluster %in% input$cluster_filter)
-}
-
-df
-})
+  df <- pca_data
+  
+  if (!is.null(input$species_filter) && length(input$species_filter) > 0) {
+    df <- df %>% filter(Species %in% input$species_filter)
+    }
+  
+  if (!is.null(input$cluster_filter) && length(input$cluster_filter) > 0) {
+    df <- df %>% filter(Cluster %in% input$cluster_filter)
+  }
+  
+  df
+  }
+)
 ```
 
+# **Plots & Analysis**
 
-## Row
+Sidebar {.sidebar}
+-------------------------------------
+### Controls
+```{r sidebar_controls}
+# 
+selectInput(
+  inputId = "xvar",
+  label   = "X-axis variable",
+  choices = names(iris_features),
+  selected = "Petal.Length"
+)
+
+# 
+selectInput(
+  inputId = "yvar",
+  label   = "Y-axis variable",
+  choices = names(iris_features),
+  selected = "Petal.Width"
+)
+
+# 
+radioButtons(
+  inputId = "color_by",
+  label   = "Color points by",
+  choices = c("K-Means Cluster" = "cluster",
+              "Species" = "species"),
+  selected = "cluster"
+)
+
+# 
+checkboxGroupInput(
+  inputId = "species_filter",
+  label   = "Filter by Species",
+  choices = levels(iris$Species),
+  selected = levels(iris$Species)
+)
+
+# 
+checkboxGroupInput(
+  inputId = "cluster_filter",
+  label   = "Filter by Cluster",
+  choices = levels(iris_kmeans$KMeansCluster),
+  selected = levels(iris_kmeans$KMeansCluster)
+)
+
+# 
+sliderInput(
+  inputId = "point_size",
+  label   = "Point size",
+  min     = 1,
+  max     = 6,
+  value   = 2.5,
+  step    = 0.5
+)
+```
+
+Column {data-height=80}
+-------------------------------------
 ### Dataset Overview
 ```{r}
 valueBox(
-value   = nrow(iris),
-caption = "Total Observations",
-icon    = "fa-database"
+  value   = nrow(iris),
+  caption = "<b>Total Observations",
+  icon    = "fa-database"
 )
+```
 
+### True Species Count
+```{r}
 valueBox(
 value   = length(unique(iris$Species)),
-caption = "True Species",
+caption = "<b>True Species",
 icon    = "fa-leaf"
 )
+```
 
+### K-Means Cluster Count
+```{r}
 valueBox(
 value   = length(unique(kmeans_model$cluster)),
-caption = "K-Means Clusters (k)",
+caption = "<b>K-Means Clusters (k)",
 icon    = "fa-object-group"
 )
 ```
@@ -173,73 +214,25 @@ icon    = "fa-object-group"
 ```{r}
 valueBox(
 value   = sprintf("%.3f", ari_kmeans),
-caption = "Adjusted Rand Index (Clusters vs Species)",
+caption = "<b>ARI (Clusters vs Species)",
 icon    = "fa-check-circle"
 )
+```
 
+### Average Silhouette Width
+```{r}
 valueBox(
 value   = sprintf("%.3f", avg_sil_width),
-caption = "Average Silhouette Width (k = 3)",
+caption = "<b>Average Silhouette Width (k = 3)",
 icon    = "fa-chart-line"
 )
 ```
 
-## Row
-## Column {data-width=260}
-### Controls
-```{r}
-selectInput(
-inputId = "xvar",
-label   = "X-axis variable",
-choices = names(iris_features),
-selected = "Petal.Length"
-)
 
-selectInput(
-inputId = "yvar",
-label   = "Y-axis variable",
-choices = names(iris_features),
-selected = "Petal.Width"
-)
+Column {.tabset, data-height=460}
+-------------------------------------
 
-radioButtons(
-inputId = "color_by",
-label   = "Color points by",
-choices = c("K-Means Cluster" = "cluster",
-"Species"         = "species"),
-selected = "cluster"
-)
-
-# New: filters
-
-checkboxGroupInput(
-inputId = "species_filter",
-label   = "Filter by Species",
-choices = levels(iris$Species),
-selected = levels(iris$Species)
-)
-
-checkboxGroupInput(
-inputId = "cluster_filter",
-label   = "Filter by Cluster",
-choices = levels(iris_kmeans$KMeansCluster),
-selected = levels(iris_kmeans$KMeansCluster)
-)
-
-# New: control over point size
-
-sliderInput(
-inputId = "point_size",
-label   = "Point size",
-min     = 1,
-max     = 6,
-value   = 2.5,
-step    = 0.5
-)
-```
-
-## Column
-### Cluster Scatterplot
+### **Cluster Scatterplot**
 ```{r}
 renderPlotly({
 req(input$xvar, input$yvar, input$color_by)
@@ -253,100 +246,103 @@ df$Species
 }
 
 p <- ggplot(
-df,
-aes(x = .data[[input$xvar]],
-y = .data[[input$yvar]],
-color = color_var,
-text = paste(
-"Sepal.Length:", Sepal.Length,
-"<br>Sepal.Width:", Sepal.Width,
-"<br>Petal.Length:", Petal.Length,
-"<br>Petal.Width:", Petal.Width,
-"<br>Species:", Species,
-"<br>Cluster:", KMeansCluster
-))
-) +
-geom_point(size = input$point_size, alpha = 0.85) +
-labs(
-x     = input$xvar,
-y     = input$yvar,
-color = if (input$color_by == "cluster") "Cluster" else "Species",
-title = "Iris Measurements (click / hover for details)"
-) +
-theme_minimal()
+  df,
+  aes(x = .data[[input$xvar]],
+      y = .data[[input$yvar]],
+      color = color_var,
+      text = paste("Sepal.Length:", Sepal.Length,
+                   "<br>Sepal.Width:", Sepal.Width,
+                   "<br>Petal.Length:", Petal.Length,
+                   "<br>Petal.Width:", Petal.Width,
+                   "<br>Species:", Species,
+                   "<br>Cluster:", KMeansCluster
+                   ))
+  ) +
+  geom_point(size = input$point_size, alpha = 0.85) +
+  labs(x = input$xvar,
+       y = input$yvar,
+       color = if (input$color_by == "cluster") "Cluster" else "Species",
+       title = "Iris Measurements"
+       ) 
 
+# Convert to plotly for interactivity
 ggplotly(p, tooltip = "text")
 })
 ```
+> Scatterplot of selected iris features colored by either K-Means clusters or true species.
 
-### K-Means Cluster Plot
+### **PCA View of Clusters**
 ```{r}
 renderPlotly({
+# PCA scatterplot of filtered data
+df <- filtered_pca()
 
-# fviz_cluster returns a ggplot; we can make it interactive via ggplotly
+# Determine coloring variable
+color_var <- if (input$color_by == "cluster") df$Cluster else df$Species
 
-p <- fviz_cluster(
-kmeans_model,
-data        = iris_scaled,
-geom        = "point",
-ellipse.type = "norm",
-main        = "K-Means Clustering on Standardized Iris Features"
+# PCA scatterplot
+p <- ggplot(
+  df,
+  aes(x = PC1, y = PC2,
+      color = color_var,
+      shape = Species,
+      text = paste("PC1:", round(PC1, 2),
+                   "<br>PC2:", round(PC2, 2),
+                   "<br>Species:", Species,
+                   "<br>Cluster:", Cluster)
+      )
+  ) +
+  geom_point(size = input$point_size, alpha = 0.85) +
+  labs(title    = "PCA Projection of Iris Data",
+       subtitle = "PC1 vs PC2 (filtered by controls)",
+       color    = if (input$color_by == "cluster") "Cluster" else "Species",
+       shape    = "Species")
+
+# Convert to plotly for interactivity
+ggplotly(p, tooltip = "text")
+})
+```
+> PCA plot and how it helps visualize the clustering results in relation to the true species labels.
+
+Column {.tabset, data-height=460}
+-------------------------------------
+
+### **K-Means Cluster Plot**
+```{r}
+renderPlotly({
+  # K-Means cluster visualization using factoextra
+  p <- fviz_cluster(
+    kmeans_model,
+    data = iris_scaled,
+    geom = "point",
+    ellipse.type = "norm",
+    main = "K-Means Clustering on Standardized Iris Features"
 )
-
+# Convert to plotly for interactivity
 ggplotly(p)
 })
 ```
+> K-Means clustering results visualized with cluster ellipses.
 
-## Row
-### PCA View of Clusters
-```{r}
-renderPlotly({
-df <- filtered_pca()
-
-color_var <- if (input$color_by == "cluster") df$Cluster else df$Species
-
-p <- ggplot(
-df,
-aes(
-x = PC1, y = PC2,
-color = color_var,
-shape = Species,
-text = paste(
-"PC1:", round(PC1, 2),
-"<br>PC2:", round(PC2, 2),
-"<br>Species:", Species,
-"<br>Cluster:", Cluster
-)
-)
-) +
-geom_point(size = input$point_size, alpha = 0.85) +
-labs(
-title    = "PCA Projection of Iris Data",
-subtitle = "PC1 vs PC2 (filtered by controls)",
-color    = if (input$color_by == "cluster") "Cluster" else "Species",
-shape    = "Species"
-) +
-theme_minimal()
-
-ggplotly(p, tooltip = "text")
-})
-```
-### Silhouette Plot (k = 3)
+### **Silhouette Plot (k = 3)**
 ```{r}
 renderPlot({
-
-# Base silhouette plot still useful for overall structure
-
-plot(
-sil_obj,
-main = "Silhouette Plot for K-Means (k = 3)",
-border = NA
-)
+# Base silhouette plot
+  suppressWarnings(
+    fviz_silhouette(
+      sil_obj) +
+      ggtitle("Silhouette Plot for K-Means (k = 3)")
+  )
 })
 ```
+> Silhouette plot showing the quality of clustering for k = 3.
 
-## Row
-### Cluster Centers (Standardized Scale)
+# **Data Tables**
+
+Column {data-height=240}
+-------------------------------------
+
+### **Cluster Centers (Standardized Scale)**
 ```{r}
 renderDataTable({
 datatable(
@@ -356,7 +352,12 @@ options = list(pageLength = 5)
 )
 })
 ```
-### Iris Data with Cluster Assignment
+> K-Means cluster centers on the standardized feature scale.
+
+Column
+-------------------------------------
+
+### **Iris Data with Cluster Assignment**
 ```{r}
 renderDataTable({
 df <- filtered_data()
@@ -366,4 +367,4 @@ options = list(pageLength = 10)
 )
 })
 ```
-
+> Original iris dataset with K-Means cluster assignments, filtered by user selections.
