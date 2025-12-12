@@ -3,12 +3,12 @@ title: "IRIS Clusters Analysis Dashboard"
 output: 
   flexdashboard::flex_dashboard:
     navbar:
-      - { href: "https://www.linkedin.com/in/shkungulio/", 
+      - { href: "https://www.linkedin.com/in/seif-kungulio/", 
       icon: "fa-linkedin" }
       - { href: https://github.com/shkungulio, 
       icon: "fa-github" }
     orientation: rows
-    vertical_layout: fill
+    vertical_layout: scroll
     theme: cosmo
 runtime: shiny
 ---
@@ -123,7 +123,6 @@ filtered_pca <- reactive({
 )
 ```
 
-# **Plots & Analysis**
 
 Sidebar {.sidebar}
 -------------------------------------
@@ -181,7 +180,7 @@ sliderInput(
 )
 ```
 
-Column {data-height=80}
+Column {data-height=120}
 -------------------------------------
 ### Dataset Overview
 ```{r}
@@ -229,7 +228,7 @@ icon    = "fa-chart-line"
 ```
 
 
-Column {.tabset, data-height=460}
+Column {.tabset, data-height=360}
 -------------------------------------
 
 ### **Cluster Scatterplot**
@@ -304,7 +303,7 @@ ggplotly(p, tooltip = "text")
 ```
 > PCA plot and how it helps visualize the clustering results in relation to the true species labels.
 
-Column {.tabset, data-height=460}
+Column {.tabset, data-height=360}
 -------------------------------------
 
 ### **K-Means Cluster Plot**
@@ -330,16 +329,15 @@ renderPlot({
 # Base silhouette plot
   suppressWarnings(
     fviz_silhouette(
-      sil_obj) +
-      ggtitle("Silhouette Plot for K-Means (k = 3)")
+      sil_obj,
+      main = "Silhouette Plot for K-Means (k = 3)")
   )
 })
 ```
 > Silhouette plot showing the quality of clustering for k = 3.
 
-# **Data Tables**
 
-Column {data-height=240}
+Column {.tabset}
 -------------------------------------
 
 ### **Cluster Centers (Standardized Scale)**
@@ -354,8 +352,6 @@ options = list(pageLength = 5)
 ```
 > K-Means cluster centers on the standardized feature scale.
 
-Column
--------------------------------------
 
 ### **Iris Data with Cluster Assignment**
 ```{r}

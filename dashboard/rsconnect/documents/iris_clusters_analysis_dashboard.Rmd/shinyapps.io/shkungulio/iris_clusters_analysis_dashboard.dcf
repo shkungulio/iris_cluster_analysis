@@ -1,0 +1,13 @@
+name: iris_clusters_analysis_dashboard
+title: iris_clusters_analysis_dashboard
+username: shkungulio
+account: shkungulio
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16302623
+bundleId: 11314231
+url: https://shkungulio.shinyapps.io/iris_clusters_analysis_dashboard/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: ../resources/scale_center.rds|../resources/scale_scale.rds|../resources/kmeans_model.rds
