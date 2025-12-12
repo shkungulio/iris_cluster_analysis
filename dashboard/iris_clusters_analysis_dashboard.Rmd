@@ -228,7 +228,7 @@ icon    = "fa-chart-line"
 ```
 
 
-Column {.tabset, data-height=360}
+Column {.tabset, data-height=280}
 -------------------------------------
 
 ### **Cluster Scatterplot**
@@ -303,7 +303,8 @@ ggplotly(p, tooltip = "text")
 ```
 > PCA plot and how it helps visualize the clustering results in relation to the true species labels.
 
-Column {.tabset, data-height=360}
+
+Column {.tabset, data-height=280}
 -------------------------------------
 
 ### **K-Means Cluster Plot**
@@ -351,7 +352,6 @@ options = list(pageLength = 5)
 })
 ```
 > K-Means cluster centers on the standardized feature scale.
-
 
 ### **Iris Data with Cluster Assignment**
 ```{r}
