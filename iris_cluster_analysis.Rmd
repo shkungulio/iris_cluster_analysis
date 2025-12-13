@@ -451,16 +451,17 @@ saveRDS(kmeans_model, "resources/kmeans_model.rds")
 
 
 
-\newpage
-
-# **About the Author**
-
-
 
 
 
 \newpage
+&nbsp;
 
+\newpage
+\begin{thebibliography}{9}
+\bibitem{index=0}
+Fisher, R. A. (1936). The use of multiple measurements in taxonomic problems. \textit{Annals of Eugenics}, 7(2), 179-188. doi:10.1111/j.1469-1809.1936.tb02143.x
+\end{thebibliography}
 
 
 
