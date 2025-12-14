@@ -8,18 +8,35 @@ output:
     orientation: rows
     vertical_layout: scroll
     theme: cosmo
+logo: "logo.png"
+css: styles.css
 runtime: shiny
 ---
 
+```{css}
+.navbar-logo {
+  height: 50px;
+  margin-top: 1px;
+  margin-bottom: 1px;
+  margin-left: 1px;
+}
+```
+
 ```{r setup, include=FALSE}
-library(flexdashboard)
-library(shiny)
-library(tidyverse)
-library(cluster)
-library(factoextra)
-library(fpc)
-library(DT)
-library(plotly)
+# Set default CRAN mirror
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+
+#Install the following libraries if required
+# List of required packages
+required_pkgs <- c("shiny", "flexdashboard","tidyverse", "cluster", "factoextra", "fpc", "DT", "plotly")
+
+# Install and load each package
+for (pkg in required_pkgs) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg)
+  }
+  library(pkg, character.only = TRUE)
+}
 
 options(scipen = 999)
 theme_set(theme_minimal(base_size = 12))
@@ -125,8 +142,10 @@ legend_title <- reactive({
 
 Sidebar {.sidebar}
 -------------------------------------
-### Controls
+### Filters
 ```{r sidebar_controls, echo=FALSE}
+
+# Color by radio buttons
 radioButtons(
   inputId = "color_by",
   label   = "Color points by",
@@ -134,6 +153,7 @@ radioButtons(
   selected = "cluster"
 )
 
+# 
 checkboxGroupInput(
   inputId = "species_filter",
   label   = "Species",
@@ -142,6 +162,7 @@ checkboxGroupInput(
   inline = FALSE
 )
 
+# 
 checkboxGroupInput(
   inputId = "cluster_filter",
   label   = "Clusters (k = 3)",
@@ -151,8 +172,9 @@ checkboxGroupInput(
 )
 ```
 
-Row {data-height=120}
--------------------------------------
+Row {data-height=100}
+--------------------------------------------------------------------------------
+
 ### **Dataset**
 ```{r}
 renderValueBox({
@@ -202,66 +224,8 @@ renderValueBox({
 ```
 
 
-Column {.tabset, data-height=280}
--------------------------------------
-
-### **K-Means View (PCA space)**
-```{r}
-renderPlotly({
-  df <- filtered_data()
-  req(nrow(df) > 1)
-
-  p <- ggplot(df, aes(x = PC1, y = PC2, color = color_vector())) +
-    geom_point(alpha = 0.85, size = 2.6) +
-    stat_ellipse(aes(group = KMeansCluster), linetype = 2, linewidth = 0.6, show.legend = FALSE) +
-    labs(
-      title = "Filtered Data in PCA Space",
-      subtitle = "Ellipses are drawn by K-Means clusters (k = 3)",
-      x = "PC1",
-      y = "PC2",
-      color = legend_title()
-    ) +
-    theme(legend.position = "bottom")
-
-  ggplotly(p, tooltip = c("x", "y")) %>% layout(legend = list(orientation = "h"))
-})
-```
-
-### **Silhouette Plot**
-```{r}
-renderPlot({
-  d <- filtered_dist()
-  df <- filtered_data()
-
-  validate(
-    need(!is.null(d), "Select at least 3 observations to compute silhouette."),
-    need(length(unique(df$KMeansCluster)) >= 2, "Silhouette needs at least 2 clusters in the filtered view.")
-  )
-
-  sil <- cluster::silhouette(as.numeric(df$KMeansCluster), d)
-  factoextra::fviz_silhouette(sil) +
-    labs(title = "Silhouette Widths (Filtered View)")
-})
-```
-
-
-Column {.tabset, data-height = "240"}
+Row {data-height=300}
 --------------------------------------------------------------------------------
-
-### **ARI vs. Species**
-```{r}
-renderPlot({
-  a <- ari_kmeans()
-  validate(need(!is.na(a), "ARI needs at least 2 species and 2 clusters in the filtered view."))
-
-  tibble(metric = "Adjusted Rand Index", value = a) %>%
-    ggplot(aes(x = metric, y = value)) +
-    geom_col() +
-    coord_flip() +
-    scale_y_continuous(limits = c(0, 1)) +
-    labs(title = "Agreement Between K-Means and True Species (Filtered)")
-})
-```
 
 ### **Cluster Scatterplot (Petal measurements)**
 ```{r}
@@ -297,8 +261,71 @@ renderPlotly({
   ggplotly(p, tooltip = "text") %>% layout(legend = list(orientation = "h"))
 })
 ```
+> Scatterplot of Petal Length vs Petal Width for the filtered iris data, colored by either K-Means clusters or true species labels.
 
-Column {.tabset}
+### **K-Means View (PCA space)**
+```{r}
+renderPlotly({
+  df <- filtered_data()
+  req(nrow(df) > 1)
+
+  p <- ggplot(df, aes(x = PC1, y = PC2, color = color_vector())) +
+    geom_point(alpha = 0.85, size = 2.6) +
+    stat_ellipse(aes(group = KMeansCluster), linetype = 2, linewidth = 0.6, show.legend = FALSE) +
+    labs(
+      title = "Filtered Data in PCA Space",
+      subtitle = "Ellipses are drawn by K-Means clusters (k = 3)",
+      x = "PC1",
+      y = "PC2",
+      color = legend_title()
+    ) +
+    theme(legend.position = "bottom")
+
+  ggplotly(p, tooltip = c("x", "y")) %>% layout(legend = list(orientation = "h"))
+})
+```
+> Scatterplots showing the filtered iris data colored by either K-Means clusters or true species labels.
+
+
+Row {data-height=300}
+--------------------------------------------------------------------------------
+
+### **ARI vs. Species**
+```{r}
+renderPlot({
+  a <- ari_kmeans()
+  validate(need(!is.na(a), "ARI needs at least 2 species and 2 clusters in the filtered view."))
+
+  tibble(metric = "Adjusted Rand Index", value = a) %>%
+    ggplot(aes(x = metric, y = value)) +
+    geom_col() +
+    coord_flip() +
+    scale_y_continuous(limits = c(0, 1)) +
+    labs(title = "Agreement Between K-Means and True Species (Filtered)")
+})
+```
+> Bar plot showing the Adjusted Rand Index (ARI) between K-Means clusters and true species labels in the filtered dataset.
+
+### **Silhouette Plot**
+```{r}
+renderPlot({
+  d <- filtered_dist()
+  df <- filtered_data()
+
+  validate(
+    need(!is.null(d), "Select at least 3 observations to compute silhouette."),
+    need(length(unique(df$KMeansCluster)) >= 2, "Silhouette needs at least 2 clusters in the filtered view.")
+  )
+
+  sil <- cluster::silhouette(as.numeric(df$KMeansCluster), d)
+  factoextra::fviz_silhouette(sil) +
+    labs(title = "Silhouette Widths (Filtered View)")
+})
+```
+> Silhouette plot showing how well each observation fits within its assigned cluster in the filtered dataset.
+
+
+Row {.tabset data-height=300}
 --------------------------------------------------------------------------------
 
 ### **Cluster Centers**
@@ -311,7 +338,7 @@ renderDataTable({
   )
 })
 ```
-> K-Means cluster centers on the standardized feature scale (fit on the full iris dataset).
+> The K-Means cluster centers on the standardized feature scale.
 
 ### **Filtered Iris Data**
 ```{r}
@@ -326,4 +353,4 @@ renderDataTable({
   )
 })
 ```
-> The table updates with the same filters used across all visuals.
+> The iris dataset with K-Means cluster assignments and PCA scores, filtered based on sidebar selections.
