@@ -8,35 +8,19 @@ output:
     orientation: rows
     vertical_layout: scroll
     theme: cosmo
-logo: "logo.png"
-css: styles.css
 runtime: shiny
 ---
 
-```{css}
-.navbar-logo {
-  height: 50px;
-  margin-top: 1px;
-  margin-bottom: 1px;
-  margin-left: 1px;
-}
-```
-
 ```{r setup, include=FALSE}
-# Set default CRAN mirror
-options(repos = c(CRAN = "https://cloud.r-project.org"))
-
 #Install the following libraries if required
-# List of required packages
-required_pkgs <- c("shiny", "flexdashboard","tidyverse", "cluster", "factoextra", "fpc", "DT", "plotly")
-
-# Install and load each package
-for (pkg in required_pkgs) {
-  if (!requireNamespace(pkg, quietly = TRUE)) {
-    install.packages(pkg)
-  }
-  library(pkg, character.only = TRUE)
-}
+library(shiny)
+library(flexdashboard)
+library(tidyverse)
+library(cluster)
+library(factoextra)
+library(fpc)
+library(DT)
+library(plotly)
 
 options(scipen = 999)
 theme_set(theme_minimal(base_size = 12))
@@ -141,7 +125,10 @@ legend_title <- reactive({
 ```
 
 Sidebar {.sidebar}
--------------------------------------
+--------------------------------------------------------------------------------
+
+<img src="ilogo.png" style="width:90px; margin-top:-10px; margin-bottom:10px"/>
+
 ### Filters
 ```{r sidebar_controls, echo=FALSE}
 
@@ -171,6 +158,17 @@ checkboxGroupInput(
   inline = FALSE
 )
 ```
+
+&nbsp;
+&nbsp;
+
+
+---
+
+
+  © 2025 Seif Kungulio  
+
+
 
 Row {data-height=100}
 --------------------------------------------------------------------------------
@@ -224,7 +222,7 @@ renderValueBox({
 ```
 
 
-Row {data-height=300}
+Row {data-height=340}
 --------------------------------------------------------------------------------
 
 ### **Cluster Scatterplot (Petal measurements)**
@@ -287,7 +285,7 @@ renderPlotly({
 > Scatterplots showing the filtered iris data colored by either K-Means clusters or true species labels.
 
 
-Row {data-height=300}
+Row {data-height=340}
 --------------------------------------------------------------------------------
 
 ### **ARI vs. Species**
@@ -325,7 +323,7 @@ renderPlot({
 > Silhouette plot showing how well each observation fits within its assigned cluster in the filtered dataset.
 
 
-Row {.tabset data-height=300}
+Row {.tabset data-height=340}
 --------------------------------------------------------------------------------
 
 ### **Cluster Centers**

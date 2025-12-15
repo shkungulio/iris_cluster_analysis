@@ -1,0 +1,13 @@
+name: iris_clusters_dashboard
+title:
+username: crispinsights
+account: crispinsights
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16313922
+bundleId: 11323887
+url: https://crispinsights.shinyapps.io/iris_clusters_dashboard/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+additionalFiles: ilogo.png
