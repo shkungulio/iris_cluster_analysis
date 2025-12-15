@@ -1,14 +1,18 @@
 ---
 title: "IRIS Clusters Analysis Dashboard"
-output: 
+output:
   flexdashboard::flex_dashboard:
     navbar:
-      - { href: "https://www.linkedin.com/in/seif-kungulio/", icon: "fa-linkedin" }
-      - { href: "https://github.com/shkungulio", icon: "fa-github" }
+    - href: "https://www.linkedin.com/in/seif-kungulio/"
+      icon: "fa-linkedin"
+    - href: https://github.com/shkungulio
+      icon: "fa-github"
     orientation: rows
     vertical_layout: scroll
     theme: cosmo
 runtime: shiny
+resource_files:
+- ilogo.png
 ---
 
 ```{r setup, include=FALSE}
