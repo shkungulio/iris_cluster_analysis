@@ -1,4 +1,4 @@
-![Project Cover](resources/template.png)
+[![Project Cover](resources/template.png)](iris_cluster_analysis.pdf)
 
 # Iris Cluster Analysis
 
