@@ -1,4 +1,4 @@
-![Project Cover](assets/cover.png)
+![Project Cover](resources/template.png)
 
 # Iris Cluster Analysis
 
