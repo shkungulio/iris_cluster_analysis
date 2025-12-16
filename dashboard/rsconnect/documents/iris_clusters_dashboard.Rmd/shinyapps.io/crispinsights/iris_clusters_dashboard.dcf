@@ -5,7 +5,7 @@ account: crispinsights
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 16313922
-bundleId: 11323906
+bundleId: 11330562
 url: https://crispinsights.shinyapps.io/iris_clusters_dashboard/
 version: 1
 asMultiple: FALSE
