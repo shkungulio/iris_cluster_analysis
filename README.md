@@ -1,3 +1,5 @@
+![Project Cover](assets/cover.png)
+
 # Iris Cluster Analysis
 
 ## Business Overview
