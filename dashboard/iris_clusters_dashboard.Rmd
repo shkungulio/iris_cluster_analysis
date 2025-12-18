@@ -258,7 +258,7 @@ renderPlotly({
       y = "Petal.Width",
       color = legend_title()
     ) +
-    theme(legend.position = "bottom")
+    theme(legend.position = "right")
 
   ggplotly(p, tooltip = "text") %>% layout(legend = list(orientation = "h"))
 })

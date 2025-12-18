@@ -1,0 +1,306 @@
+---
+title: "IRIS Clusters Analysis Dashboard"
+output:
+  flexdashboard::flex_dashboard:
+    navbar:
+    - href: "https://www.linkedin.com/in/seif-kungulio/"
+      icon: "fa-linkedin"
+    - href: https://github.com/shkungulio
+      icon: "fa-github"
+    orientation: rows
+    vertical_layout: scroll
+    theme: united
+runtime: shiny
+resource_files:
+- ilogo.png
+---
+
+```{r setup, include=FALSE}
+#Install the following libraries if required
+library(shiny)
+library(flexdashboard)
+library(tidyverse)
+library(cluster)
+library(factoextra)
+library(fpc)
+library(DT)
+library(plotly)
+
+options(scipen = 999)
+theme_set(theme_minimal(base_size = 12))
+
+
+
+# Data & model objects
+data(iris)
+
+# Select numeric features only
+iris_features <- iris %>%
+  select(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width)
+
+# Load saved scaling parameters and trained K-Means model
+scale_center <- readRDS("../resources/scale_center.rds")
+scale_scale  <- readRDS("../resources/scale_scale.rds")
+kmeans_model <- readRDS("../resources/kmeans_model.rds")
+
+# Apply standardization
+iris_scaled <- scale(iris_features, 
+                     center = scale_center, 
+                     scale = scale_scale)
+
+# Attach clusters back to original data
+iris_kmeans <- iris %>%
+  mutate(KMeansCluster = factor(kmeans_model$cluster),
+         Species = Species
+         )
+
+# Distance matrix for cluster diagnostics
+dist_iris <- dist(iris_scaled)
+
+# Silhouette for k = 3
+sil_obj <- cluster::silhouette(kmeans_model$cluster, dist_iris)
+avg_sil_width <- mean(sil_obj[, "sil_width"])
+
+# Adjusted Rand Index helper
+compute_ari <- function(cluster_labels, dist_matrix, true_labels) {
+  cluster.stats(d = dist_matrix, clustering = cluster_labels,
+                alt.clustering = as.numeric(true_labels)
+  )$corrected.rand
+  }
+
+ari_kmeans <- compute_ari(kmeans_model$cluster, dist_iris, iris$Species)
+
+# PCA for visualization (same approach as in your report)
+pca_model <- prcomp(iris_scaled, center = TRUE, scale. = TRUE)
+
+pca_data <- as_tibble(pca_model$x[, 1:2]) %>%
+  mutate(Cluster = factor(kmeans_model$cluster), Species = iris$Species)
+
+# Cluster centers as tibble (for display)
+centers_tbl <- as_tibble(kmeans_model$centers) %>%
+  mutate(Cluster = factor(row_number())) %>%
+  relocate(Cluster)
+```
+
+```{r}
+# Shared reactive filters for the whole dashboard
+filtered_data <- reactive({
+  df <- iris_kmeans
+
+# Filter by species (if user selected any)
+  if (!is.null(input$species_filter) && length(input$species_filter) > 0) {
+    df <- df %>% filter(Species %in% input$species_filter)
+}
+
+# Filter by cluster (if user selected any)
+  if (!is.null(input$cluster_filter) && length(input$cluster_filter) > 0) {
+    df <- df %>% filter(KMeansCluster %in% input$cluster_filter)
+}
+
+  df
+})
+
+filtered_pca <- reactive({
+  df <- pca_data
+  
+  if (!is.null(input$species_filter) && length(input$species_filter) > 0) {
+    df <- df %>% filter(Species %in% input$species_filter)}
+
+  if (!is.null(input$cluster_filter) && length(input$cluster_filter) > 0) {
+    df <- df %>% filter(Cluster %in% input$cluster_filter)}
+
+  df
+})
+```
+
+
+Sidebar {.sidebar data-width=240}
+--------------------------------------------------------------------------------
+### **Controls**
+
+```{r sidebar-controls}
+radioButtons(
+  inputId = "color_by",
+  label   = "Color points by",
+  choices = c("K-Means Cluster" = "cluster", "Species" = "species"),
+  selected = "cluster"
+)
+
+checkboxGroupInput(
+  inputId = "species_filter",
+  label   = "Filter by Species",
+  choices = levels(iris$Species),
+  selected = levels(iris$Species)
+)
+
+checkboxGroupInput(
+  inputId = "cluster_filter",
+  label   = "Filter by Cluster",
+  choices = levels(iris_kmeans$KMeansCluster),
+  selected = levels(iris_kmeans$KMeansCluster)
+)
+
+sliderInput(
+inputId = "point_size",
+label = "Point size",
+min = 1,
+max = 6,
+value = 2.5,
+step = 0.5
+)
+```
+
+
+
+***
+
+
+
+&nbsp; © [2025 Seif Kungulio](http://shkungulio.com)  
+
+
+Row {data-height=110}
+--------------------------------------------------------------------------------
+### Tobal Observations
+```{r}
+valueBox(
+value   = nrow(iris),
+caption = "Total Observations",
+icon    = "fa-database"
+)
+```
+
+### True Species
+```{r}
+valueBox(
+value   = length(unique(iris$Species)),
+caption = "True Species",
+icon    = "fa-leaf"
+)
+```
+
+### K-Means Clusters
+```{r}
+valueBox(
+value   = length(unique(kmeans_model$cluster)),
+caption = "K-Means Clusters (k)",
+icon    = "fa-object-group"
+)
+```
+
+### Adjusted Rand Index
+```{r}
+valueBox(
+value   = sprintf("%.3f", ari_kmeans),
+caption = "Adjusted Rand Index",
+icon    = "fa-check-circle"
+)
+```
+
+### Avg. Silhouette Width
+```{r}
+valueBox(
+value   = sprintf("%.3f", avg_sil_width),
+caption = "Avg. Silhouette Width",
+icon    = "fa-chart-line"
+)
+```
+
+
+Row {data-height=320}
+--------------------------------------------------------------------------------
+### **Cluster Scatterplot (Petal measurements)**
+```{r}
+renderPlotly({
+  df <- filtered_data()
+  req(nrow(df) > 1)
+
+  p <- ggplot(
+    df,
+    aes(
+      x = Petal.Length,
+      y = Petal.Width,
+      color = color_vector(),
+      text = paste(
+        "Sepal.Length:", Sepal.Length,
+        "<br>Sepal.Width:", Sepal.Width,
+        "<br>Petal.Length:", Petal.Length,
+        "<br>Petal.Width:", Petal.Width,
+        "<br>Species:", Species,
+        "<br>Cluster:", KMeansCluster
+      )
+    )
+  ) +
+    geom_point(alpha = 0.85, size = 2.8) +
+    labs(
+      title = "Petal Length vs Petal Width (Filtered)",
+      x = "Petal.Length",
+      y = "Petal.Width",
+      color = legend_title()
+    ) +
+    theme(legend.position = "right")
+
+  ggplotly(p, tooltip = "text") %>% layout(legend = list(orientation = "h"))
+})
+```
+> Scatterplot of Petal Length vs Petal Width for the filtered iris data, colored by either K-Means clusters or true species labels.
+
+### **K-Means View (PCA space)**
+```{r}
+renderPlotly({
+  df <- filtered_data()
+  req(nrow(df) > 1)
+
+  p <- ggplot(df, aes(x = PC1, y = PC2, color = color_vector())) +
+    geom_point(alpha = 0.85, size = 2.6) +
+    stat_ellipse(aes(group = KMeansCluster), linetype = 2, linewidth = 0.6, show.legend = FALSE) +
+    labs(
+      title = "Filtered Data in PCA Space",
+      subtitle = "Ellipses are drawn by K-Means clusters (k = 3)",
+      x = "PC1",
+      y = "PC2",
+      color = legend_title()
+    ) +
+    theme(legend.position = "bottom")
+
+  ggplotly(p, tooltip = c("x", "y")) %>% layout(legend = list(orientation = "h"))
+})
+```
+> Scatterplots showing the filtered iris data colored by either K-Means clusters or true species labels.
+
+
+
+Row {data-height=320}
+---
+### Chart 3
+```{r}
+
+```
+>
+
+### Chart 4
+```{r}
+renderPlot({
+
+# Base silhouette plot still useful for overall structure
+
+plot(
+sil_obj,
+main = "Silhouette Plot for K-Means (k = 3)",
+border = NA
+)
+})
+```
+> 
+
+Row {.tabset .tabset-fade data-height=240}
+---
+### Table 1
+```{r}
+
+```
+
+### Table 2
+```{r}
+
+```
