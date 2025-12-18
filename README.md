@@ -23,6 +23,7 @@ Overall, K-Means with k = 3 was selected as the preferred model due to its inter
 
 ## Dashboard Preview
 An interactive flexdashboard accompanies this analysis, providing visual exploration of cluster assignments, PCA projections, and model comparisons. The dashboard enables users to dynamically inspect how different clustering methods partition the data and how these partitions relate to known species labels.
+
 [![Dashboard](resources/dashboard.png)](https://crispinsights.shinyapps.io/iris_clusters_dashboard/)
  
 ## Reflections & Lessons Learned
