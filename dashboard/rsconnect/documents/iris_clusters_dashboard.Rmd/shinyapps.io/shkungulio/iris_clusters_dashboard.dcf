@@ -5,7 +5,7 @@ account: shkungulio
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 16367427
-bundleId: 11393044
+bundleId: 11493250
 url: https://shkungulio.shinyapps.io/iris_clusters_dashboard/
 version: 1
 asMultiple: FALSE

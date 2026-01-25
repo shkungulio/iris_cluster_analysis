@@ -2,6 +2,7 @@
 title: "IRIS Clusters Analysis Dashboard"
 output:
   flexdashboard::flex_dashboard:
+    logo: "logo.png"
     navbar:
     - href: "https://www.linkedin.com/in/seif-kungulio/"
       icon: "fa-linkedin"
@@ -11,8 +12,6 @@ output:
     vertical_layout: scroll
     theme: cosmo
 runtime: shiny
-resource_files:
-- ilogo.png
 ---
 
 ```{r setup, include=FALSE}
@@ -131,8 +130,6 @@ legend_title <- reactive({
 Sidebar {.sidebar}
 --------------------------------------------------------------------------------
 
-<img src="ilogo.png" style="width:90px; margin-top:-10px; margin-bottom:10px"/>
-
 ### Filters
 ```{r sidebar_controls, echo=FALSE}
 
@@ -209,6 +206,18 @@ renderValueBox({
     value   = length(unique(df$KMeansCluster)),
     caption = "<b>Clusters present</b>",
     icon    = "fa-circle-nodes"
+  )
+})
+```
+
+### Adjusted Rand Index
+```{r}
+renderValueBox({
+  a <- ari_kmeans()
+  valueBox(
+    value   = ifelse(is.na(a), "—", sprintf("%.3f", a)),
+    caption = "<b>ARI Index</b>",
+    icon    = "fa-check-circle"
   )
 })
 ```
