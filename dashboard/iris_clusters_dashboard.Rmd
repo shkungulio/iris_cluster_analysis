@@ -11,6 +11,7 @@ output:
     orientation: rows
     vertical_layout: scroll
     theme: cosmo
+    source_code: embed
 runtime: shiny
 ---
 
@@ -167,7 +168,7 @@ checkboxGroupInput(
 ---
 
 
-  © 2025 Seif Kungulio  
+  © 2025 Crisp-DM Insights  
 
 
 
