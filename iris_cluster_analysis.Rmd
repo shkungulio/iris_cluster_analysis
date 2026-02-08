@@ -1,7 +1,7 @@
 ---
 title: |
   \vspace*{\fill}
-  \fontsize{36}{40}\selectfont \textbf {Iris Clusters Analysis}
+  \fontsize{36}{40}\selectfont \textbf {Uncovering Natural Structure in the Iris Dataset}
 author: |
   \fontsize{24}{28}\selectfont Seif H. Kungulio
 date: |
@@ -26,7 +26,7 @@ header-includes:
   - \tcbset{colback=white, colframe=brand, coltitle=white, fonttitle=\bfseries}
   - \usepackage{fancyhdr}
   - \pagestyle{fancy}
-  - \fancyhead[L]{\textcolor{brand}{Iris Clusters Analysis}}
+  - \fancyhead[L]{\textcolor{brand}{Uncovering Natural Structure in the Iris Dataset}}
   - \fancyhead[R]{\textcolor{subbrand}{Seif H. Kungulio}}
   - \fancyfoot[C]{\thepage}
 editor_options:

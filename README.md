@@ -1,6 +1,6 @@
-[![Project Cover](resources/template.png)](iris_cluster_analysis.pdf)
+[![Project Cover](resources/cover_page.png)](iris_cluster_analysis.pdf)
 
-# Iris Cluster Analysis
+# Uncovering Natural Structure in the Iris Dataset
 
 ## Business Overview
 This project explores unsupervised learning techniques to uncover natural groupings within the classic Iris dataset using only numeric flower measurements. Although the dataset includes known species labels, they are intentionally excluded during modeling to simulate real-world scenarios where labels are unavailable or costly to obtain. The analysis demonstrates how clustering can support pattern discovery, exploratory insight generation, and preliminary classification tasks across domains such as biology, market segmentation, and anomaly detection.
