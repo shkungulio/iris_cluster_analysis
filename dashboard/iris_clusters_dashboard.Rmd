@@ -5,8 +5,10 @@ output:
     logo: "logo.png"
     navbar:
     - href: "https://www.linkedin.com/in/seif-kungulio/"
+      target: "_blank"
       icon: "fa-linkedin"
     - href: https://github.com/shkungulio
+      target: "_blank"
       icon: "fa-github"
     orientation: rows
     vertical_layout: scroll
