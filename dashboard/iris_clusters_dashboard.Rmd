@@ -143,6 +143,7 @@ radioButtons(
   choices = c("K-Means Cluster" = "cluster", "Species" = "species"),
   selected = "cluster"
 )
+hr()
 
 # 
 checkboxGroupInput(
@@ -152,6 +153,7 @@ checkboxGroupInput(
   selected = levels(iris$Species),
   inline = FALSE
 )
+hr()
 
 # 
 checkboxGroupInput(
@@ -161,13 +163,12 @@ checkboxGroupInput(
   selected = levels(iris_kmeans$KMeansCluster),
   inline = FALSE
 )
+
+hr()
 ```
 
 &nbsp;
 &nbsp;
-
-
----
 
 
   © 2025 Crisp-DM Insights  
